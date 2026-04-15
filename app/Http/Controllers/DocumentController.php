@@ -180,16 +180,27 @@ class DocumentController extends Controller
             return redirect()->route('upload.form')
                 ->withErrors(['excel_file' => 'The ZIP file could not be found. Please generate again.']);
         }
-        // Stream the ZIP file to the browser
-        // -----------------------------------------------------------------------
-        // FUTURE MODIFICATION — Download filename
-        // Change 'generated_documents.zip' below to rename what the user sees
-        // in their browser download dialog.
-        // -----------------------------------------------------------------------
+
+        // FIRST: Clean up the individual .docx folders
+        // These are the temporary Word documents that were zipped
+        // We can delete them now because they are already inside the ZIP
+        $generatedDir = storage_path('app/private/generated');
+        $folders = glob($generatedDir . '/202*', GLOB_ONLYDIR);
+        foreach ($folders as $folder) {
+            $files = glob($folder . '/*');
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    unlink($file);
+                }
+            }
+            rmdir($folder);
+        }
+
+        // SECOND: Send the ZIP to the user, then delete the ZIP itself
         return response()->download(
             $fullPath,
             'generated_documents.zip',
-         ['Content-Type' => 'application/zip']
-        );
+            ['Content-Type' => 'application/zip']
+        )->deleteFileAfterSend(true);
     }
 }
