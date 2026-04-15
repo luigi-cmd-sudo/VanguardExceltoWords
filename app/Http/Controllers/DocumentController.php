@@ -7,18 +7,17 @@ use App\Services\WordExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\File;
 
 class DocumentController extends Controller
 {
-    // Maximum number of data rows allowed per upload.
-    // Row 1 (header) is not counted.
-    // -----------------------------------------------------------------------
-    // FUTURE MODIFICATION — Row limit
-    // Change this number to allow more rows per upload.
-    // Be careful: more rows = more memory and processing time.
-    // For 500+ rows, consider switching to queued/async processing.
-    // -----------------------------------------------------------------------
     private const MAX_ROWS = 200;
+
+    // -----------------------------------------------------------------------
+    // Files older than this (in minutes) will be auto-deleted
+    // Change this number if you want files to live longer or shorter
+    // -----------------------------------------------------------------------
+    private const CLEANUP_AFTER_MINUTES = 60;
 
     public function __construct(
         private WordExportService $wordService
@@ -30,6 +29,9 @@ class DocumentController extends Controller
 
     public function index()
     {
+        // Clean up old files every time someone visits the upload page
+        $this->cleanupOldFiles();
+
         return view('upload');
     }
 
@@ -39,18 +41,15 @@ class DocumentController extends Controller
 
     public function upload(Request $request)
     {
-        // --- Validate the uploaded file ---
-        // -----------------------------------------------------------------------
-        // FUTURE MODIFICATION — Validation rules
-        // Change 'max:10240' to allow larger files (value is in kilobytes).
-        // Change 'mimes:xlsx,xls,csv' to allow other file types.
-        // -----------------------------------------------------------------------
+        // Clean up old files before generating new ones
+        $this->cleanupOldFiles();
+
         $request->validate([
             'excel_file' => [
                 'required',
                 'file',
                 'mimes:xlsx,xls,csv',
-                'max:10240',  // 10 MB maximum
+                'max:10240',
             ],
         ], [
             'excel_file.required' => 'Please select an Excel file.',
@@ -59,31 +58,26 @@ class DocumentController extends Controller
             'excel_file.max'      => 'The file must not be larger than 10 MB.',
         ]);
 
-        // --- Save the uploaded Excel file temporarily ---
         $excelPath = $request->file('excel_file')->store('uploads');
         $fullPath  = Storage::path($excelPath);
 
-        // --- Read the Excel file ---
         try {
             $import = new CandidatesImport();
             Excel::import($import, $fullPath);
             $rows = $import->getRows();
 
         } catch (\Exception $e) {
-            // Clean up the uploaded file if reading failed
             Storage::delete($excelPath);
             return redirect()->route('upload.form')
                 ->withErrors(['excel_file' => 'Could not read the Excel file: ' . $e->getMessage()]);
         }
 
-        // --- Check for empty file ---
         if ($rows->isEmpty()) {
             Storage::delete($excelPath);
             return redirect()->route('upload.form')
                 ->withErrors(['excel_file' => 'The Excel file has no data rows. Please check the file.']);
         }
 
-        // --- Check row limit ---
         if ($rows->count() > self::MAX_ROWS) {
             Storage::delete($excelPath);
             return redirect()->route('upload.form')
@@ -92,7 +86,6 @@ class DocumentController extends Controller
                 ]);
         }
 
-        // --- Generate all Word documents and ZIP them ---
         try {
             $zipPath = $this->wordService->generateZip($rows);
 
@@ -102,28 +95,8 @@ class DocumentController extends Controller
                 ->withErrors(['excel_file' => 'Generation failed: ' . $e->getMessage()]);
         }
 
-        //storage path debugging
-
-        //         dd([
-        //     'zipPath'          => $zipPath,
-        //     'file_exists'      => file_exists($zipPath),
-        //     'storage_path'     => storage_path('app/private'),
-        //     'DIRECTORY_SEP'    => DIRECTORY_SEPARATOR,
-        //     'relativeZipPath'  => str_replace(
-        //         storage_path('app/private') . DIRECTORY_SEPARATOR,
-        //         '',
-        //         $zipPath
-        //     ),
-        // ]);
-
-
-        // --- Clean up the uploaded Excel file (no longer needed) ---
         Storage::delete($excelPath);
 
-        // --- Pass the ZIP path to the result page ---
-        // We store only the relative path (after storage/app/private/)
-        // so we can pass it through the session safely.
-        // Normalize all slashes to forward slashes to avoid Windows path issues
         $normalizedZipPath     = str_replace('\\', '/', $zipPath);
         $normalizedStoragePath = str_replace('\\', '/', storage_path('app/private'));
 
@@ -133,10 +106,6 @@ class DocumentController extends Controller
             $normalizedZipPath
         );
 
-        // Store ZIP path and row count in session, then redirect to result page.
-        // We use session() instead of passing variables directly because
-        // after a redirect the request is brand new — session is the safe way
-        // to carry data across a redirect.
         return redirect()->route('upload.result')
             ->with('zip_path',  $relativeZipPath)
             ->with('row_count', $rows->count());
@@ -148,7 +117,6 @@ class DocumentController extends Controller
 
     public function result()
     {
-        // If someone visits /result directly without uploading, send them back
         if (!session()->has('zip_path')) {
             return redirect()->route('upload.form');
         }
@@ -171,7 +139,6 @@ class DocumentController extends Controller
             abort(400, 'Invalid file path.');
         }
 
-        // Normalize slashes for Windows compatibility
         $relativeZipPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relativeZipPath);
 
         $fullPath = storage_path('app' . DIRECTORY_SEPARATOR . 'private' . DIRECTORY_SEPARATOR . $relativeZipPath);
@@ -181,9 +148,7 @@ class DocumentController extends Controller
                 ->withErrors(['excel_file' => 'The ZIP file could not be found. Please generate again.']);
         }
 
-        // FIRST: Clean up the individual .docx folders
-        // These are the temporary Word documents that were zipped
-        // We can delete them now because they are already inside the ZIP
+        // Clean up the individual .docx folders (already inside the ZIP)
         $generatedDir = storage_path('app/private/generated');
         $folders = glob($generatedDir . '/202*', GLOB_ONLYDIR);
         foreach ($folders as $folder) {
@@ -196,11 +161,72 @@ class DocumentController extends Controller
             rmdir($folder);
         }
 
-        // SECOND: Send the ZIP to the user, then delete the ZIP itself
+        // Send the ZIP then delete it
         return response()->download(
             $fullPath,
             'generated_documents.zip',
             ['Content-Type' => 'application/zip']
         )->deleteFileAfterSend(true);
+    }
+
+    // =========================================================================
+    // AUTO-CLEANUP OLD FILES
+    // =========================================================================
+
+    /**
+     * Deletes all generated files older than CLEANUP_AFTER_MINUTES.
+     *
+     * This runs every time someone:
+     *   - Visits the upload page
+     *   - Uploads a new file
+     *
+     * This prevents storage from filling up when users don't download.
+     */
+    private function cleanupOldFiles(): void
+    {
+        $generatedDir = storage_path('app/private/generated');
+
+        // If the folder doesn't exist, nothing to clean
+        if (!is_dir($generatedDir)) {
+            return;
+        }
+
+        $now = time();
+        $maxAge = self::CLEANUP_AFTER_MINUTES * 30; // Convert minutes to seconds
+
+        // --- Clean up old date folders (e.g., 20260415_020852/) ---
+        $folders = glob($generatedDir . '/202*', GLOB_ONLYDIR);
+        foreach ($folders as $folder) {
+            if (($now - filemtime($folder)) > $maxAge) {
+                // Delete all files inside the folder
+                $files = glob($folder . '/*');
+                foreach ($files as $file) {
+                    if (is_file($file)) {
+                        unlink($file);
+                    }
+                }
+                // Delete the empty folder
+                rmdir($folder);
+            }
+        }
+
+        // --- Clean up old ZIP files ---
+        $zipFiles = glob($generatedDir . '/*.zip');
+        foreach ($zipFiles as $zipFile) {
+            if (($now - filemtime($zipFile)) > $maxAge) {
+                unlink($zipFile);
+            }
+        }
+
+        // --- Clean up old uploaded Excel files ---
+        $uploadsDir = storage_path('app/private/uploads');
+        if (is_dir($uploadsDir)) {
+            $uploadedFiles = glob($uploadsDir . '/*');
+            foreach ($uploadedFiles as $uploadedFile) {
+                if (is_file($uploadedFile) && ($now - filemtime($uploadedFile)) > $maxAge) {
+                    unlink($uploadedFile);
+                }
+            }
+        }
     }
 }
