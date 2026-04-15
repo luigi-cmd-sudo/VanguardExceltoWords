@@ -52,15 +52,15 @@ RUN mkdir -p storage/framework/views
 RUN mkdir -p storage/logs
 RUN mkdir -p bootstrap/cache
 
-# Set permissions
-RUN chmod -R 775 storage bootstrap/cache
-RUN chown -R www-data:www-data storage bootstrap/cache
+# Create an empty SQLite database so Laravel doesn't crash
+RUN touch database/database.sqlite
 
-# DO NOT cache config during build
-# Environment variables are only available at runtime on Render
+# Set permissions
+RUN chmod -R 775 storage bootstrap/cache database
+RUN chown -R www-data:www-data storage bootstrap/cache database
 
 # Expose port 80
 EXPOSE 80
 
-# Start Apache and cache config at runtime (when env vars are available)
+# Start: cache config at runtime then start Apache
 CMD php artisan config:cache && php artisan route:cache && php artisan view:cache && apache2-foreground
