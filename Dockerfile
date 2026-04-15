@@ -20,15 +20,18 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# Set the Apache document root to Laravel's public folder
+# Set the Apache document root
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 # Update Apache config
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# Allow .htaccess overrides (Laravel needs this)
+# Allow .htaccess overrides
 RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
+
+# Suppress Apache ServerName warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 # Set working directory
 WORKDIR /var/www/html
@@ -53,13 +56,11 @@ RUN mkdir -p bootstrap/cache
 RUN chmod -R 775 storage bootstrap/cache
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Generate Laravel cache files
-RUN php artisan config:cache
-RUN php artisan route:cache
-RUN php artisan view:cache
+# DO NOT cache config during build
+# Environment variables are only available at runtime on Render
 
 # Expose port 80
 EXPOSE 80
 
-# Start Apache
-CMD ["apache2-foreground"]
+# Start Apache and cache config at runtime (when env vars are available)
+CMD php artisan config:cache && php artisan route:cache && php artisan view:cache && apache2-foreground
