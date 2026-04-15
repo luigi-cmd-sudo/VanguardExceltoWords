@@ -6,7 +6,8 @@
 
     <div class="card">
 
-        <h1>📄 Excel → Word Converter</h1>
+        <h1><img src="{{ asset('images/excelPic.png') }}" class="header-icon" alt="Excel"> Excel → Word Converter</h1>
+
         <p class="subtitle">
             Upload an Excel file. One Word document will be generated per candidate row.
             All documents will be packaged into a single ZIP file for download.

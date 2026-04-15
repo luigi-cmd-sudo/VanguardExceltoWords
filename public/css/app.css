@@ -16,7 +16,27 @@ body {
     margin: 0 auto;
     padding: 40px;
 }
-h1 { margin-top: 0; color: #2C3E50; font-size: 1.7rem; }
+
+h1 { 
+    margin-top: 0;
+    color: #2C3E50; 
+    font-size: 1.7rem;
+    margin-top: 0; 
+    color: #2C3E50; 
+    font-size: 1.7rem; 
+    display: flex;          /* Aligns items in a row */
+    align-items: center;    /* Centers the image and text vertically */
+    gap: 12px;
+
+}
+
+.header-icon {
+    width: 36px;            /* Prevents the image from being massive */
+    height: auto;           /* Maintains the aspect ratio */
+    flex-shrink: 0;         /* Prevents the image from squishing */
+}
+
+
 .subtitle { color: #666; margin-bottom: 28px; font-size: 0.95rem; }
 label { display: block; font-weight: 600; margin-bottom: 8px; }
 input[type="file"] {
