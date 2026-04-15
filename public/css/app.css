@@ -1,0 +1,109 @@
+
+/* Upload Page Styles */
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f4f8;
+    margin: 0;
+    padding: 120px 20px !important;
+    color: #333;
+}
+.card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    max-width: 580px;
+    margin: 0 auto;
+    padding: 40px;
+}
+h1 { margin-top: 0; color: #2C3E50; font-size: 1.7rem; }
+.subtitle { color: #666; margin-bottom: 28px; font-size: 0.95rem; }
+label { display: block; font-weight: 600; margin-bottom: 8px; }
+input[type="file"] {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: 2px dashed #CBD5E0;
+    border-radius: 8px;
+    background: #F7FAFC;
+    font-size: 0.9rem;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+input[type="file"]:hover { border-color: #2C3E50; }
+.hint { font-size: 0.8rem; color: #999; margin-top: 6px; }
+.btn-submit {
+    display: block;
+    width: 100%;
+    padding: 13px;
+    margin-top: 22px;
+    background: #2C3E50;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+}
+.btn-submit:hover { background: #1a252f; }
+.btn-submit:disabled { background: #95a5a6; cursor: not-allowed; }
+.error-box {
+    background: #fff5f5;
+    border-left: 4px solid #e53e3e;
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 22px;
+}
+.error-box p { margin: 0; color: #c53030; font-size: 0.9rem; }
+.requirements {
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid #E2E8F0;
+    font-size: 0.82rem;
+    color: #888;
+}
+.requirements ul { padding-left: 18px; margin: 8px 0 0; line-height: 1.9; }
+code { background: #f1f5f9; padding: 1px 5px; border-radius: 3px; font-size: 0.85rem; }
+
+/* Download Page Styles */
+
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f4f8;
+    margin: 0;
+    padding: 40px 20px;
+    color: #333;
+}
+.card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 40px;
+    text-align: center;
+}
+.icon { font-size: 3.5rem; margin-bottom: 10px; }
+h1 { color: #2C3E50; font-size: 1.6rem; margin: 0 0 10px; }
+.summary { color: #666; font-size: 0.95rem; margin-bottom: 32px; line-height: 1.6; }
+.btn {
+    display: block;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    margin-bottom: 12px;
+    transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+
+.btn-download { background: #27AE60; color: #fff; }
+
+
+.btn-another  { background: #ECF0F1; color: #2C3E50; }
+
+.note { font-size: 0.8rem; color: #aaa; margin-top: 20px; }
