@@ -26,7 +26,7 @@
 
             <label for="excel_file">Select Excel File</label>
             <input type="file" id="excel_file" name="excel_file" accept=".xlsx,.xls,.csv">
-            <p class="hint">Accepted: .xlsx, .xls, .csv &nbsp;·&nbsp; Max size: 10 MB &nbsp;·&nbsp; Max rows: 200</p>
+            
 
             <button type="submit" class="btn-submit" id="submitBtn">
                 ⚡ Convert to Word Documents

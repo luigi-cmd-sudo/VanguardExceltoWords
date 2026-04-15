@@ -1,0 +1,42 @@
+<header class="main-header">
+    <div class="header-container">
+
+        <div class="hamburger" onclick="toggleMenu()">☰</div>
+
+        <div class="logos">
+            <a href="https://www.vanguardscreen.com/">  <img src="{{asset('images/vanguard.png')}}" class="main-logo" alt="Vanguard Logo"></a>
+            <img src="{{asset('images/10-years.png')}}" class="anniversary-logo" alt="10 Years">
+        </div>
+
+        <nav class="nav-menu">
+            <ul>
+                <li id="home" class="menu-item"><a href="{{ route('upload.form') }}">HOME</a></li>
+                <li class="menu-item">
+                    <a href="https://www.vanguardscreen.com/about-us/" class="has-arrow">ABOUT US</a>
+                    <div class="dropdown-content">
+                        <a href="https://www.vanguardscreen.com/about-us/">The Company</a>
+                        <a href="https://www.vanguardscreen.com/about-us/our-core-principles/">Our Core Principles</a>
+                        <a href="https://www.vanguardscreen.com/about-us/our-team/">Our Team</a>
+                        <a href="https://www.vanguardscreen.com/about-us/why-vanguard/">Why Vanguard</a>
+                        <a href="https://www.vanguardscreen.com/about-us/careers/">Careers</a>
+                    </div>
+                </li>
+                <li class="menu-item">
+                    <a href="https://www.vanguardscreen.com/services/" class="has-arrow">SERVICES</a>
+                    <div class="dropdown-content">
+                        <a href="https://www.vanguardscreen.com/background-checks/">Background Checks</a>
+                        <a href="https://www.vanguardscreen.com/compliance-screening/">Compliance Screening</a>
+                        <a href="https://www.vanguardscreen.com/due-diligence/">Due Diligence</a>
+                        <a href="https://www.vanguardscreen.com/support-services/">Support Services</a>
+                    </div>
+                </li>
+                <li class="menu-item"><a href="https://www.vanguardscreen.com/news/" id="news_button">NEWS</a></li>
+                <li class="menu-item"><a href="https://www.vanguardscreen.com/contact-us/" class="contact-link">CONTACT US</a></li>
+            </ul>
+        </nav>
+
+        <div class="accreditation">
+            <a href="https://www.thepbsa.org/" target="_blank"><img src="{{asset('images/pbsa.png')}}" alt="PBSA Accreditation"></a>
+        </div>
+    </div>
+</header>
